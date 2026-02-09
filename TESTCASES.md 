@@ -1,0 +1,61 @@
+# Test Cases
+
+## Authentication (1–15)
+1. Signup with valid data → user created, 200/201.
+2. Signup with existing email → 409/400.
+3. Signup missing email → 400.
+4. Signup invalid email format → 400.
+5. Signup weak password (too short) → 400.
+6. Login valid credentials → 200 returns access/refresh token.
+7. Login wrong password → 401.
+8. Login unknown email → 401.
+9. Login missing password → 400.
+10. Refresh with valid refresh token → 200 new access token.
+11. Refresh missing token → 401/400.
+12. Refresh invalid token → 401.
+13. Access protected endpoint without Authorization → 401.
+14. Access protected endpoint with malformed Authorization header → 401.
+15. Token tampering (modify JWT) → 401.
+
+## Items API – Read (16–25)
+16. GET /api/items returns {data, pagination}.
+17. GET /api/items default pagination page=1 limit=10.
+18. GET /api/items with page/limit query works.
+19. GET /api/items with negative page/limit → handled (400 or safe default).
+20. GET /api/items with very large limit → capped or stable performance.
+21. GET /api/items empty database → data=[] and total=0.
+22. GET /api/items/:id valid existing id → 200 item.
+23. GET /api/items/:id non-existing id → 404.
+24. GET /api/items/:id invalid id format → 400.
+25. GET /api/items rate-limit behavior (repeat calls quickly) → 429 expected.
+
+## Items API – Create/Update/Delete + RBAC (26–40)
+26. POST /api/items as Guest → 401.
+27. POST /api/items as normal User → 403 (editor/admin required).
+28. POST /api/items as Editor → 201/200 created item.
+29. POST /api/items missing required fields → 400.
+30. POST /api/items extra unexpected fields → ignored or validated.
+31. POST /api/items XSS string in title/description → stored safely (no HTML execution on output).
+32. PUT /api/items/:id as Guest → 401.
+33. PUT /api/items/:id as User → 403.
+34. PUT /api/items/:id as Editor updates allowed fields → 200.
+35. PUT /api/items/:id invalid id → 400.
+36. DELETE /api/items/:id as Guest → 401.
+37. DELETE /api/items/:id as User → should be 403 (verify actual).
+38. DELETE /api/items/:id as Editor/Admin → 200/204 and item removed.
+39. After delete, GET /api/items/:id returns 404.
+40. Update/delete other user’s item (ownership rules) → verify expected behavior.
+
+## File Upload (41–45)
+41. Upload without auth → 401.
+42. Upload as normal User → 403.
+43. Upload as Editor with valid file → 200 returns file path/url.
+44. Upload invalid file type/size → 400/415 expected.
+45. Upload to non-existing item id → 404.
+
+## Security / Reliability / Regression (46–50)
+46. CORS allows “*” with credentials=true → security risk (verify behavior).
+47. JWT in local storage/cookies (if used) and refresh token behavior → verify.
+48. API returns consistent error format: {error: "..."}.
+49. Setup regression: `npm install` fails without `--legacy-peer-deps` → documented.
+50. Service resilience: start server without MongoDB → fails to start (should handle gracefully).

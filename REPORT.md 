@@ -1,0 +1,72 @@
+# QA Report – Buggy MERN App
+
+## 1) Summary
+
+The backend API was validated in GitHub Codespaces with a working MongoDB connection.  
+Due to multiple setup and configuration defects (dependency conflicts, broken Docker setup, missing frontend build output), the frontend UI was not reliably accessible. Therefore, testing focused primarily on API contracts, authentication, RBAC, and item flows.
+
+Both manual API checks (via curl) and automated API tests (Vitest + Supertest) were performed.
+
+---
+
+## 2) Test Coverage Summary
+
+### Manual Testing
+- Verified server startup and MongoDB connection
+- Verified API endpoints:
+  - `GET /api/cache-status`
+  - `GET /api/items`
+- Verified failure scenarios:
+  - MongoDB not running
+  - Port conflicts
+  - Frontend not available
+
+### Automated Testing
+- Smoke tests:
+  - `GET /api/cache-status`
+  - `GET /api/items`
+- E2E API journey:
+  - Signup → Login → List Items
+- RBAC test:
+  - Normal user cannot create item (expects 401/403)
+
+Tools used:
+- Vitest
+- Supertest
+
+---
+
+## 3) Bugs Found
+
+1. Dependency install conflicts require `npm install --legacy-peer-deps` (setup defect)
+2. Docker build fails due to pnpm-lock.yaml assumptions / broken lockfile behavior
+3. Frontend not accessible: server serves `client/dist` but dist not present; GET / shows no UI
+4. App fails hard when MongoDB is not running (no graceful error handling or health endpoint)
+5. CORS configured with origin `"*"` and `credentials: true` (security risk)
+6. Port conflicts cause server crash (`EADDRINUSE`) instead of graceful error
+7. Broken shipped test file (`server/auth.logout.test.ts`) due to missing import
+8. Misconfigured `vitest.config.ts` (contains Vite config instead of test config)
+9. Server auto-starts during test imports, causing port conflicts during test runs
+
+---
+
+## 4) Recommendations
+
+- Fix dependency versions and remove need for `--legacy-peer-deps`
+- Repair Docker configuration and standardize package manager usage
+- Add frontend build step and serve real UI output
+- Add health endpoint and better startup error handling
+- Separate app creation from server listening for better testability
+- Fix or remove broken shipped tests
+- Provide a proper Vitest configuration for backend testing
+- Tighten CORS policy and review authentication security
+- Add CI pipeline to run automated tests on pull requests
+
+---
+
+## 5) Conclusion
+
+The application contains multiple critical setup, reliability, and security issues, which aligns with the goal of testing a deliberately buggy system.  
+Despite these issues, a working automated API test suite was implemented, covering smoke tests, an E2E authentication journey, and RBAC checks.  
+
+This provides a solid foundation for regression testing and future stabilization of the project.
