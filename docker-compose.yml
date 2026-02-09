@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: buggy-mern-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: buggy-mern-app
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - buggy-mern-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: buggy-mern-api
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://mongo:27017/buggy-mern-app
+      JWT_SECRET: weak-secret-key-123
+      REFRESH_TOKEN_SECRET: weak-refresh-secret-456
+      PORT: 3001
+    depends_on:
+      - mongo
+    volumes:
+      - ./server:/app/server
+      - ./uploads:/app/uploads
+    networks:
+      - buggy-mern-network
+    command: npm run dev
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: buggy-mern-web
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_BASE: http://localhost:3001
+    depends_on:
+      - api
+    volumes:
+      - ./client:/app/client
+    networks:
+      - buggy-mern-network
+    command: npm run dev
+
+volumes:
+  mongo_data:
+
+networks:
+  buggy-mern-network:
+    driver: bridge
